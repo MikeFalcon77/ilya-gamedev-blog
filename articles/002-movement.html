@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<!-- Set lang="ru" for Russian articles, lang="en" for English -->
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Update the title for each article -->
+    <title>Движение персонажа в GameMaker: базовая организация</title>
+    <meta name="description" content="Короткая заметка о том, как организовать движение персонажа в GameMaker: ввод, скорость, нормализация диагонали и столкновения.">
+
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="bg-white font-sans text-gray-900">
+
+    <nav class="w-full py-4 bg-blue-800 shadow">
+        <div class="w-full container mx-auto flex items-center justify-between px-4">
+            <a class="text-white font-bold text-lg hover:text-gray-200" href="/index.html">GameMaker Notes</a>
+            <ul class="flex items-center font-semibold text-sm text-white uppercase space-x-4">
+                <li><a class="hover:text-gray-200 hover:underline" href="/index.html">Home</a></li>
+                <li><a class="hover:text-gray-200 hover:underline" href="/about.html">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="w-full container mx-auto">
+        <div class="flex flex-col items-center py-12">
+            <a class="font-bold text-gray-800 uppercase hover:text-gray-700 text-5xl" href="/index.html">
+                GameMaker Notes
+            </a>
+            <p class="text-lg text-gray-600">
+                Short learning notes about GameMaker.
+            </p>
+        </div>
+    </header>
+
+    <div class="container mx-auto flex flex-wrap py-6">
+
+        <section class="w-full md:w-2/3 flex flex-col items-center px-3">
+
+            <div class="w-full bg-white shadow my-4 overflow-hidden rounded">
+                <img class="w-full h-64 object-cover" src="/assets/images/movement-1000x500.png" alt="Placeholder hero image for GameMaker article">
+                <div class="p-8">
+                    <!-- Optional: link to the same article in another language -->
+                    <div class="text-sm text-right text-gray-600 mb-4 space-x-3">
+                        <a href="#" class="hover:text-gray-800 hover:underline">EN</a>
+                        <a href="#" class="hover:text-gray-800 hover:underline">RU</a>
+                    </div>
+                    <article class="prose prose-lg max-w-none">
+                        <!-- Article title (same as in index.html card) -->
+                        <h1>Организация movement персонажа в GameMaker</h1>
+                        <!-- Write this article in English or Russian. Avoid personal details. -->
+                        <p>Самая частая ошибка в первых проектах — “движение прямо в <code>Step</code> через <code>x +=</code>” без структуры. Ниже — простой, но масштабируемый каркас: отдельно собираем ввод, отдельно считаем скорость, отдельно решаем столкновения.</p>
+
+                        <h2>1) Данные и скорость — в Create</h2>
+                        <p>В <code>Create</code> удобно завести параметры и текущую скорость по осям. Даже если сейчас движение “плиточное”, через неделю вам захочется ускорение, трение, рывок или скольжение — и эти переменные уже будут на месте.</p>
+                        <pre class="bg-gray-900 text-gray-100 rounded p-4 overflow-x-auto"><code>// obj_player: Create
+move_speed = 4;        // максимальная скорость
+accel      = 0.6;      // ускорение к цели
+friction   = 0.7;      // затухание, когда нет ввода (0..1)
+
+hsp = 0;               // horizontal speed
+vsp = 0;               // vertical speed
+</code></pre>
+
+                        <h2>2) Ввод → целевое направление</h2>
+                        <p>Сначала превращаем нажатия в вектор направления (<code>dx</code>, <code>dy</code>). Дальше этот вектор можно заменить на геймпад/AI, не переписывая движение.</p>
+                        <pre class="bg-gray-900 text-gray-100 rounded p-4 overflow-x-auto"><code>// obj_player: Step (Input)
+var dx = keyboard_check(vk_right) - keyboard_check(vk_left);
+var dy = keyboard_check(vk_down)  - keyboard_check(vk_up);
+
+// Нормализация диагонали: чтобы по диагонали не было быстрее
+if (dx != 0 || dy != 0) {
+    var len = point_distance(0, 0, dx, dy);
+    dx /= len;
+    dy /= len;
+}
+</code></pre>
+
+                        <h2>3) Ускорение/трение → “приятное” управление</h2>
+                        <p>Вместо мгновенного <code>x += speed</code> лучше плавно тянуться к целевой скорости. Когда ввода нет — применяем трение.</p>
+                        <pre class="bg-gray-900 text-gray-100 rounded p-4 overflow-x-auto"><code>// obj_player: Step (Velocity)
+var target_hsp = dx * move_speed;
+var target_vsp = dy * move_speed;
+
+// Плавно приближаемся к цели
+hsp = lerp(hsp, target_hsp, accel);
+vsp = lerp(vsp, target_vsp, accel);
+
+// Если нет ввода — “гасим” скорость
+if (dx == 0) hsp *= friction;
+if (dy == 0) vsp *= friction;
+</code></pre>
+
+                        <h2>4) Перемещение со столкновениями (простая схема)</h2>
+                        <p>Двигайтесь по осям отдельно: сначала X, потом Y. Так проще решать столкновения и избегать “залипаний” в углах. Ниже пример для твёрдых стен <code>obj_wall</code>.</p>
+                        <pre class="bg-gray-900 text-gray-100 rounded p-4 overflow-x-auto"><code>// obj_player: Step (Move + Collisions)
+// X
+if (place_meeting(x + hsp, y, obj_wall)) {
+    while (!place_meeting(x + sign(hsp), y, obj_wall)) x += sign(hsp);
+    hsp = 0;
+}
+x += hsp;
+
+// Y
+if (place_meeting(x, y + vsp, obj_wall)) {
+    while (!place_meeting(x, y + sign(vsp), obj_wall)) y += sign(vsp);
+    vsp = 0;
+}
+y += vsp;
+</code></pre>
+
+                        <h2>Мини-чеклист</h2>
+                        <ul>
+                            <li>Сначала “ввод” → потом “скорость” → потом “коллизии”.</li>
+                            <li>Нормализуйте диагональ, если используете 2D движение.</li>
+                            <li>Параметры (скорость/ускорение/трение) держите в <code>Create</code> — их удобно твикать.</li>
+                            <li>Когда появятся прыжки/гравитация, <code>vsp</code> станет вашей базой и ничего ломать не придётся.</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+
+            <!-- Optional navigation: update links and titles, or delete this section -->
+            <div class="w-full flex pt-6 space-x-4">
+                <a href="#" class="w-1/2 bg-white shadow hover:shadow-md text-left p-6 rounded">
+                    <p class="text-lg text-blue-800 font-bold">Previous</p>
+                    <p class="pt-2 text-gray-700">Set link and title or remove this block</p>
+                </a>
+                <a href="#" class="w-1/2 bg-white shadow hover:shadow-md text-right p-6 rounded">
+                    <p class="text-lg text-blue-800 font-bold">Next</p>
+                    <p class="pt-2 text-gray-700">Set link and title or remove this block</p>
+                </a>
+            </div>
+
+        </section>
+
+        <aside class="w-full md:w-1/3 flex flex-col items-center px-3">
+
+            <div class="w-full bg-white shadow flex flex-col my-4 p-6 rounded">
+                <p class="text-xl font-semibold pb-3">About</p>
+                <p class="pb-3">This is a learning blog with notes about GameMaker. No personal info is shared here.</p>
+                <p class="pb-3">Browse more tutorials or start a new article using this template.</p>
+                <a href="/about.html" class="w-full bg-blue-800 text-white font-bold text-sm uppercase rounded hover:bg-blue-700 flex items-center justify-center px-2 py-3 mt-4">
+                    Learn more
+                </a>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <footer class="w-full border-t bg-white py-8">
+        <div class="w-full container mx-auto flex flex-col items-center">
+            <div class="text-center text-sm text-gray-700">
+                GameMaker Notes - a learning project
+            </div>
+            <div class="text-center text-xs text-gray-500 mt-2">
+                &copy; 2025
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

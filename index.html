@@ -21,7 +21,26 @@
         </div>
     </nav>
 
-    <header class="w-full container mx-auto">
+    <header class="relative w-full">
+        <img
+          src="/assets/images/header_bg-1000x500.png"
+          alt="GameMaker learning notes"
+          class="w-full h-80 object-cover"
+        >
+        <div class="absolute inset-0 bg-black/40"></div>
+      
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <h1 class="text-4xl md:text-5xl font-bold text-white">
+            GameMaker Notes
+          </h1>
+          <p class="mt-4 text-lg text-gray-200 max-w-2xl">
+            Short learning notes about GameMaker.
+          </p>
+        </div>
+      </header>
+
+      
+    <!-- <header class="w-full container mx-auto">
         <div class="flex flex-col items-center py-12">
             <a class="font-bold text-gray-800 uppercase hover:text-gray-700 text-5xl" href="/index.html">
                 GameMaker Notes
@@ -30,7 +49,7 @@
                 Short learning notes about GameMaker.
             </p>
         </div>
-    </header>
+    </header> -->
 
     <div class="container mx-auto flex flex-wrap py-6">
 
@@ -38,7 +57,6 @@
 
             <article class="w-full bg-white shadow overflow-hidden rounded">
                 <a href="/articles/001-events.html" class="block">
-                    <img class="w-full h-56 object-cover" src="/assets/images/placeholder-1000x500.png" alt="Placeholder cover for GameMaker events article">
                 </a>
                 <div class="p-6">
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">
@@ -51,7 +69,6 @@
 
             <article class="w-full bg-white shadow overflow-hidden rounded">
                 <a href="/articles/002-movement.html" class="block">
-                    <img class="w-full h-56 object-cover" src="/assets/images/placeholder-1000x500.png" alt="Placeholder cover for GameMaker movement article">
                 </a>
                 <div class="p-6">
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">
